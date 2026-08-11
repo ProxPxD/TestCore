@@ -39,7 +39,7 @@ class ExemplaryTCG(TCG):
 
     @classmethod
     def generate_tcs(cls) -> list:
-        tcs = cls.tcs
+        tcs = list(cls.tcs)
         tcs.extend([
             TC('Test that needs functional operations', input='kidding', expected='K I D D I N G'),
         ])
