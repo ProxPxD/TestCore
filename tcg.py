@@ -84,13 +84,15 @@ class TCG:
             ids: Any = None,
             **kwargs: Any,
         ) -> MarkDecorator:
+        def get_tag_brackets(tc: Any) -> str:
+            return ' - (' + ', '.join(getattr(tc, 'tags', '')) + ') '
+
         if ids is None:
             match name_from:
                 case str() | int(): name_from = (name_from, )
                 case None: name_from = ('name', 'short', 'descr')
                 case _: pass
-            def get_tag_brackets(tc: Any) -> str:
-                return ' - (' + ', '.join(getattr(tc, 'tags', '')) + ') '
+
             def get_ids(tc: object) -> str:
                 if ids := cls.create_name(tc):
                     return ids
