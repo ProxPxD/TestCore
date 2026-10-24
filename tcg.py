@@ -1,6 +1,6 @@
 import warnings
 from collections.abc import Iterable, Sequence
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 from _pytest.mark import Mark, ParameterSet
@@ -17,7 +17,7 @@ class TCG:
     """
     TCG - Test Case Generator
     """
-    tcs: Optional[Sequence[Any]] = None
+    tcs: Sequence[Any] | None = None
 
     @classmethod
     def generate_tcs(cls) -> list[Any]:
@@ -58,7 +58,7 @@ class TCG:
         return base_mark_decorator(*subs).mark
 
     @classmethod
-    def _as_paramset(cls, tc: Any, tags: Iterable[str] = None) -> ParameterSet:
+    def _as_paramset(cls, tc: Any, tags: Iterable[str] | None = None) -> ParameterSet:
         marks: list[Mark] = cls._generate_marks(tags or [])
         tc = cls.map(tc)
         values: tuple[Any, ...] = (tc, ) if hasattr(tc, '_asdict') or not isinstance(tc, tuple) else tc
@@ -74,21 +74,31 @@ class TCG:
                 yield cls._as_paramset(lil_tc, unique(big_tags + lil_tags))
 
     @classmethod
-    def create_name(cls, tc: Any) -> Optional[str]:  # noqa: ARG003
+    def create_name(cls, tc: Any) -> str | None:  # noqa: ARG003
         return None
 
     @classmethod
     def parametrize(cls,
-            param_names: str | Sequence[str]=None,
-            name_from: str | int | Sequence[str|int] = None,
+            param_names: str | Sequence[str] | None = None,
+            name_from: str | int | Sequence[str | int] | None = None,
             ids: Any = None,
             **kwargs: Any,
         ) -> MarkDecorator:
-        def get_tag_brackets(tc: Any) -> str:
-            return ' - (' + ', '.join(getattr(tc, 'tags', '')) + ') '
         if ids is None:
-            name_from: Sequence[str | int] = (name_from, ) if isinstance(name_from, (str | int)) else name_from or ('name', 'short', 'descr')
-            ids = lambda tc: cls.create_name(tc) or (c().at(*name_from).filter(bool).concat(tc).head()(tc) + get_tag_brackets(tc))  # noqa: E731
+            match name_from:
+                case str() | int(): name_from = (name_from, )
+                case None: name_from = ('name', 'short', 'descr')
+                case _: pass
+            def get_tag_brackets(tc: Any) -> str:
+                return ' - (' + ', '.join(getattr(tc, 'tags', '')) + ') '
+            def get_ids(tc: object) -> str:
+                if ids := cls.create_name(tc):
+                    return ids
+                main: str = c().at(*name_from).filter(bool).head().default_to(tc).to_string()
+                brackets: str = get_tag_brackets(tc)
+                return f'{main}{brackets}'
+
+            ids = get_ids
         param_names = param_names or cls.param_names()
         params = cls.generate_params()
-        return pytest.mark.parametrize(param_names, params, ids=ids, **kwargs)
+        return pytest.mark.parametrize(param_names, params, ids=get_ids, **kwargs)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from typing import Iterable, Optional
 
-from tcg import TCG
+from testing.core import TCG
 
 
 def exemplary_logic(string: str) -> str:
@@ -62,7 +62,7 @@ class ExemplaryTCG(TCG):
         return tc.tags
 
     @classmethod
-    def create_name(cls, tc) -> Optional[str]:
+    def create_name(cls, tc) -> str | None:
         return f'{tc.descr}: "{tc.input}", ({", ".join(tc.tags)})'
 
 
