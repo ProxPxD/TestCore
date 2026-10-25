@@ -24,6 +24,10 @@ class TCG:
         return list(cls.tcs if cls.tcs is not None else [])
 
     @classmethod
+    def premap(cls, tc: Any) -> Any:
+        return tc
+
+    @classmethod
     def map(cls, tc: Any) -> Any:
         return tc
 
@@ -69,7 +73,8 @@ class TCG:
     def generate_params(cls) -> Iterable[ParameterSet]:
         for big_tc in cls.generate_tcs():
             big_tags: list[str] = list(cls.gather_tag_before_mapping_to_many(big_tc))
-            for lil_tc in cls.map_to_many(big_tc):
+            mapped_big_tc = cls.premap(big_tc)
+            for lil_tc in cls.map_to_many(mapped_big_tc):
                 lil_tags: list[str] = list(cls.gather_tags(lil_tc))
                 yield cls._as_paramset(lil_tc, unique(big_tags + lil_tags))
 

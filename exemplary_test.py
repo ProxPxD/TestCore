@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 
 from testing.core import TCG
 
@@ -46,14 +46,17 @@ class ExemplaryTCG(TCG):
         return tcs
 
     @classmethod
+    def premap(cls, tc: TC) -> TC:
+        tc.input = [tc.input] if isinstance(tc.input, str) else tc.input
+        tc.expected = [tc.expected] if isinstance(tc.expected, str) else tc.expected
+        if len(tc.input) != len(tc.expected):
+            raise ValueError('TC should have the same number of inputs and expected')
+        return tc
+
+    @classmethod
     def map_to_many(cls, tc: TC) -> Iterable[Tc]:
-        match tc.input, tc.expected:
-            case (str(), str()): return [Tc(**asdict(tc))]
-            case (list(), list()):
-                if len(tc.input) != len(tc.expected):
-                    raise ValueError('TC should have the same number of inputs and expected')
-                return [Tc(**{**asdict(tc), 'input': i, 'expected': e}) for i, e in zip(tc.input, tc.expected)]
-            case _: raise ValueError('Unexpected input or expected fields of TC')
+        for i, e in zip(tc.input, tc.expected, strict=True):
+            yield Tc(**asdict(replace(tc, input=i, expected=e)))
 
     @classmethod
     def gather_tags(cls, tc: Tc) -> Iterable[str]:
